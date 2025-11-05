@@ -14,6 +14,17 @@ function Header() {
   }
 
   const getBreadcrumb = (path) => {
+    // Manejo de ruta de crear pedido
+    if (path === '/orders/create') {
+      return {
+        showBack: true,
+        items: [
+          { label: 'Gestión de Pedidos', path: '/orders', clickable: true },
+          { label: 'Crear Pedido', clickable: false }
+        ]
+      }
+    }
+
     // Manejo de rutas dinámicas
     if (path.startsWith('/orders/')) {
       const encodedOrderId = path.split('/')[2]

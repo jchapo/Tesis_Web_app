@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/layout/Layout'
 import Login from './pages/Login'
 import Orders from './pages/Orders'
+import OrderCreate from './pages/OrderCreate'
 import OrderView from './pages/OrderView'
 import OrderEdit from './pages/OrderEdit'
 import OrderAssign from './pages/OrderAssign'
@@ -26,6 +27,7 @@ function App() {
                     <Routes>
                       <Route path="/" element={<Navigate to="/orders" replace />} />
                       <Route path="/orders" element={<Orders />} />
+                      <Route path="/orders/create" element={<OrderCreate />} />
                       <Route path="/orders/:orderId/view" element={<OrderView />} />
                       <Route path="/orders/:orderId/edit" element={<OrderEdit />} />
                       <Route path="/orders/:orderId/assign" element={<OrderAssign />} />

@@ -401,7 +401,10 @@ function Orders() {
               </div>
             )}
           </div>
-          <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] gap-2">
+          <button
+            onClick={() => navigate('/orders/create')}
+            className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] gap-2 hover:bg-primary/90 transition-colors"
+          >
             <span className="material-symbols-outlined">add_circle</span>
             <span className="truncate">Crear Pedido</span>
           </button>

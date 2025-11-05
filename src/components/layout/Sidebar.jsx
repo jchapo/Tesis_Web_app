@@ -4,7 +4,7 @@ function Sidebar() {
   const location = useLocation()
 
   const menuItems = [
-    { path: '/', icon: 'dashboard', label: 'Dashboard' },
+    { path: '/orders/create', icon: 'add_circle', label: 'Crear Pedido' },
     { path: '/orders', icon: 'local_shipping', label: 'Pedidos' },
     { path: '/drivers', icon: 'two_wheeler', label: 'Motorizados' },
     { path: '/customers', icon: 'groups', label: 'Clientes' },
