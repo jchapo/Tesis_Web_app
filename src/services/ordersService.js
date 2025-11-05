@@ -24,15 +24,13 @@ const transformFirestoreDoc = (docSnapshot) => {
     status = 'in-progress'
   }
 
-  // Formatear fecha
+  // Formatear fecha sin hora
   const formatDate = (timestamp) => {
     if (!timestamp) return '-'
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
     return date.toLocaleDateString('es-PE', {
       day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: 'short'
     })
   }
 

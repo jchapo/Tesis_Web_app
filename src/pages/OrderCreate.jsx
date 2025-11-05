@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { createOrder } from '../services/orderCreateService'
 
 function OrderCreate() {
   const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
   const [formData, setFormData] = useState({
     // Información del proveedor/cliente
     empresaNombre: '',
@@ -57,11 +60,53 @@ function OrderCreate() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    // TODO: Implementar la lógica para guardar el pedido en Firestore
-    console.log('Datos del formulario:', formData)
+    setLoading(true)
+    setError(null)
 
-    // Por ahora, solo redirigir a la lista de pedidos
-    // navigate('/orders')
+    try {
+      // Validar campos requeridos
+      if (!formData.empresaNombre || !formData.empresaCelular || !formData.empresaDistrito ||
+          !formData.clienteNombre || !formData.clienteCelular || !formData.clienteDistrito ||
+          !formData.detalleEnvio || !formData.fechaEntrega || !formData.seCobrara) {
+        setError('Por favor completa todos los campos obligatorios')
+        setLoading(false)
+        return
+      }
+
+      // Si se cobrará, validar monto y método de pago
+      if (formData.seCobrara === 'si') {
+        if (!formData.montoCobrar || parseFloat(formData.montoCobrar) <= 0) {
+          setError('Por favor ingresa un monto válido a cobrar')
+          setLoading(false)
+          return
+        }
+        if (!formData.metodoPago) {
+          setError('Por favor selecciona un método de pago')
+          setLoading(false)
+          return
+        }
+      }
+
+      // Crear el pedido
+      const result = await createOrder(formData)
+
+      if (result.success) {
+        // Redirigir a la lista de pedidos con mensaje de éxito
+        navigate('/orders', {
+          state: {
+            message: `Pedido ${result.orderId} creado exitosamente`,
+            type: 'success'
+          }
+        })
+      } else {
+        setError(result.message || 'Error al crear el pedido')
+      }
+    } catch (err) {
+      console.error('Error al crear pedido:', err)
+      setError('Error inesperado al crear el pedido')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const distritosLima = [
@@ -88,6 +133,22 @@ function OrderCreate() {
         <div className="w-full max-w-4xl mx-auto">
           <div className="bg-background-light dark:bg-background-dark p-6 md:p-8 rounded-xl border border-gray-200 dark:border-white/10">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Información del Pedido</h2>
+
+            {/* Mensaje de error */}
+            {error && (
+              <div className="mb-6 p-4 rounded-lg bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/30 text-red-800 dark:text-red-400 flex items-start gap-3">
+                <span className="material-symbols-outlined text-xl">error</span>
+                <div className="flex-1">
+                  <p className="font-medium">{error}</p>
+                </div>
+                <button
+                  onClick={() => setError(null)}
+                  className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                >
+                  <span className="material-symbols-outlined text-xl">close</span>
+                </button>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit}>
               {/* Información del Proveedor/Empresa */}
@@ -504,10 +565,23 @@ function OrderCreate() {
 
                 <button
                   type="submit"
-                  className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] gap-2 hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark"
+                  disabled={loading}
+                  className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] gap-2 hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="material-symbols-outlined">save</span>
-                  <span>Crear Pedido</span>
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Creando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined">save</span>
+                      <span>Crear Pedido</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

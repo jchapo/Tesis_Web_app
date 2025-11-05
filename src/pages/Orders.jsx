@@ -170,8 +170,8 @@ function Orders() {
         const [year, month, day] = filters.date.split('-')
         const filterDate = new Date(year, month - 1, day)
 
-        // Extraer la fecha del texto createdAt (formato: "DD-mes., HH:MM")
-        // Ejemplo: "05-nov., 01:04 p. m." o "5-nov., 10:30 a. m."
+        // Extraer la fecha del texto createdAt (formato: "DD-mes.")
+        // Ejemplo: "05-nov." o "5-dic."
         const orderDateMatch = order.createdAt.match(/^(\d{1,2})-(\w{3})/)
         if (orderDateMatch) {
           const [, dayStr, monthStr] = orderDateMatch
@@ -679,9 +679,6 @@ function Orders() {
                     Dimensiones
                   </th>
                   <th scope="col" className="px-2 py-2.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
-                    Cobro
-                  </th>
-                  <th scope="col" className="px-2 py-2.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Motorizado
                   </th>
                   <th scope="col" className="px-2 py-2.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
@@ -725,9 +722,6 @@ function Orders() {
                       </td>
                       <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
                         {order.dimensions}
-                      </td>
-                      <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
-                        {order.charge}
                       </td>
                       <td className={`px-2 py-2 whitespace-nowrap text-xs ${order.driver === 'Sin Asignar' || order.driver === 'N/A' ? 'text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200'}`}>
                         {order.driver}
