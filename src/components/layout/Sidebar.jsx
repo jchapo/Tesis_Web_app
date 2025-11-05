@@ -42,24 +42,6 @@ function Sidebar() {
           </Link>
         ))}
       </nav>
-
-      {/* Bottom Section */}
-      <div className="mt-auto flex flex-col items-center gap-4">
-        <Link
-          to="/settings"
-          className="p-3 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5"
-          title="Configuración"
-        >
-          <span className="material-symbols-outlined">settings</span>
-        </Link>
-        <div
-          className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
-          style={{
-            backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAiE3lhoLU-4v4OJBuK3cBmpqCYhVsSI83kjdyRebEYE12Bb242SVCvAT5g8jSmzI29PX6dds0dZqWPsdWO7r-Y3NfLzo4hAn6BNcbWhk9j0m_3k_1zL7UqBP5pXZm5rNkTWohYlXiP-L-JLIcha9wGMKFMRMamTEdsTsCAnTflJk79RsKSHgK9w18pyYZLylU4WpAC3j-WY3S8rcZwhB071kmsAAadnQWqEMFf636hRGerEw6VA9zLBBoiW1-LqTSkCD70szovPoE")'
-          }}
-          title="User profile picture"
-        />
-      </div>
     </aside>
   )
 }

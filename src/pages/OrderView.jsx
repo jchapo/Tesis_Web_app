@@ -1,53 +1,81 @@
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { getOrderById } from '../services/ordersService'
+import { transformOrderForView } from '../utils/firestoreTransform'
 
 function OrderView() {
   const { orderId: encodedOrderId } = useParams()
   const navigate = useNavigate()
   const orderId = decodeURIComponent(encodedOrderId)
 
-  // Datos de ejemplo - en producción vendrían de una API
-  const orderData = {
-    id: orderId,
-    status: 'En Camino',
-    statusColor: 'text-yellow-500',
-    sender: {
-      name: 'Ana Morales',
-      phone: '+1 (234) 567-890',
-      address: 'Av. Principal 123, Ciudad Capital'
-    },
-    recipient: {
-      name: 'Carlos Rojas',
-      phone: '+1 (987) 654-321',
-      address: 'Calle Secundaria 456, Distrito Norte'
-    },
-    package: {
-      dimensions: '30cm x 20cm x 15cm',
-      weight: '2.5 kg',
-      volume: '0.009 m³',
-      content: 'Documentos Importantes'
-    },
-    driver: {
-      name: 'Javier Rodriguez',
-      vehicle: 'Moto - Placa XYZ-123',
-      rating: '4.9',
-      reviews: '125',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAZyEIwR6HATFjv4nMeD4RlvjzPT9LrwGcPeGxpS6tbp5d17fJGsOK-6NaMx0TMCvMyASYpMtO9wX7SQJdNk_YEXtXSm9-CKWuC6qJ6YVJDLPmlvClq6qQBp7Kmya92QpOvvt5aqkBIPRXl4g9t1BXUuzA1gt8oKNYhTwExKU5EDLjx8E_7ZJ-DNItvcBLdBd1PQX9Ii3eSOlvqeUDi2Rnm3tuRydJZoxq57QwD5pAxJTPhsm3MO810t9DxYIVmQDrv1k2IlM4fINc'
-    },
-    costs: {
-      shipping: '$15.00',
-      insurance: '$2.50',
-      total: '$17.50'
-    },
-    timeline: [
-      { status: 'Creado', date: '10 Jul, 10:00 AM', completed: true, icon: 'check' },
-      { status: 'Asignado', date: '10 Jul, 10:15 AM', completed: true, icon: 'check' },
-      { status: 'En camino', date: '10 Jul, 11:30 AM', completed: true, icon: 'local_shipping', current: true },
-      { status: 'Entregado', date: 'Pendiente', completed: false, icon: 'inventory_2' }
-    ],
-    photos: {
-      pickup: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAiysCbwg7sPTMNU3sdS8IrgaD06eU_Y76gTrkJ2BlNlBGtOJdVZOgReBlK-ptl8vmVXtDEYrquM_fJayA0GTu9UGELp3wQD8R47GxqWOw9Psjkn0gYdBtF61V5zdKIheoEnV4EFmS9fQRiGi-zkQdozN9hI4F7nLw7rPRR1VXgw9ObulIo_9pWDjCZe2BzEPHLFWfuDaAClBzrUOZW4B3vSL9TmAY9HSNBozD6V3SxJtKIwDUogiF5K-nVUVZeKi7SMWg5NSLHZOw',
-      delivery: null
+  const [orderData, setOrderData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    loadOrder()
+  }, [orderId])
+
+  const loadOrder = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const order = await getOrderById(orderId)
+
+      if (!order || !order.rawData) {
+        throw new Error('Pedido no encontrado')
+      }
+
+      // Transformar los datos para la vista detallada
+      const transformedData = transformOrderForView(order.rawData)
+      setOrderData(transformedData)
+    } catch (err) {
+      setError(err.message || 'Error al cargar el pedido')
+      console.error('Error cargando pedido:', err)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto p-4">
+        <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+          <button
+            onClick={() => navigate('/orders')}
+            className="ml-4 underline hover:no-underline"
+          >
+            Volver a pedidos
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!orderData) {
+    return (
+      <div className="max-w-7xl mx-auto p-4">
+        <div className="text-center">
+          <p className="text-gray-500 dark:text-gray-400">No se encontró el pedido</p>
+          <button
+            onClick={() => navigate('/orders')}
+            className="mt-4 text-primary underline hover:no-underline"
+          >
+            Volver a pedidos
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -204,31 +232,40 @@ function OrderView() {
           {/* Motorizado */}
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
             <h3 className="text-gray-900 dark:text-white text-lg font-bold tracking-tight mb-4">Motorizado Asignado</h3>
-            <div className="flex items-center gap-4 mb-4">
-              <div
-                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-16"
-                style={{ backgroundImage: `url("${orderData.driver.avatar}")` }}
-              />
-              <div>
-                <p className="font-bold text-gray-900 dark:text-white">{orderData.driver.name}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{orderData.driver.vehicle}</p>
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="material-symbols-outlined text-yellow-400 text-base">star</span>
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{orderData.driver.rating}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">({orderData.driver.reviews})</span>
+            {orderData.driver ? (
+              <>
+                <div className="flex items-center gap-4 mb-4">
+                  <div
+                    className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-16"
+                    style={{ backgroundImage: `url("${orderData.driver.avatar}")` }}
+                  />
+                  <div>
+                    <p className="font-bold text-gray-900 dark:text-white">{orderData.driver.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{orderData.driver.vehicle}</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="material-symbols-outlined text-yellow-400 text-base">star</span>
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{orderData.driver.rating}</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">({orderData.driver.reviews})</span>
+                    </div>
+                  </div>
                 </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button className="flex-1 flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-sm font-bold hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors">
+                    <span className="material-symbols-outlined text-lg">chat</span>
+                    <span>Contactar</span>
+                  </button>
+                  <button className="flex-1 flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white text-sm font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                    <span className="material-symbols-outlined text-lg">route</span>
+                    <span>Ver Ruta</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <span className="material-symbols-outlined text-gray-400 dark:text-gray-500 text-4xl mb-2">person_off</span>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Sin motorizado asignado</p>
               </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <button className="flex-1 flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-sm font-bold hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors">
-                <span className="material-symbols-outlined text-lg">chat</span>
-                <span>Contactar</span>
-              </button>
-              <button className="flex-1 flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white text-sm font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                <span className="material-symbols-outlined text-lg">route</span>
-                <span>Ver Ruta</span>
-              </button>
-            </div>
+            )}
           </div>
 
           {/* Fotos del paquete */}

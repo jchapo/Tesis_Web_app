@@ -1,5 +1,8 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/layout/Layout'
+import Login from './pages/Login'
 import Orders from './pages/Orders'
 import OrderView from './pages/OrderView'
 import OrderEdit from './pages/OrderEdit'
@@ -8,17 +11,32 @@ import OrderAssign from './pages/OrderAssign'
 function App() {
   return (
     <Router>
-      <div className="font-display bg-background-light dark:bg-background-dark">
-        <Layout>
+      <AuthProvider>
+        <div className="font-display bg-background-light dark:bg-background-dark">
           <Routes>
-            <Route path="/" element={<Orders />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/orders/:orderId/view" element={<OrderView />} />
-            <Route path="/orders/:orderId/edit" element={<OrderEdit />} />
-            <Route path="/orders/:orderId/assign" element={<OrderAssign />} />
+            {/* Ruta pública - Login */}
+            <Route path="/login" element={<Login />} />
+
+            {/* Rutas protegidas */}
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<Navigate to="/orders" replace />} />
+                      <Route path="/orders" element={<Orders />} />
+                      <Route path="/orders/:orderId/view" element={<OrderView />} />
+                      <Route path="/orders/:orderId/edit" element={<OrderEdit />} />
+                      <Route path="/orders/:orderId/assign" element={<OrderAssign />} />
+                    </Routes>
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
           </Routes>
-        </Layout>
-      </div>
+        </div>
+      </AuthProvider>
     </Router>
   )
 }

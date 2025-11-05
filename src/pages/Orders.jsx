@@ -1,66 +1,49 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getAllOrders, searchOrders } from '../services/ordersService'
 
 function Orders() {
   const navigate = useNavigate()
-  const [orders] = useState([
-    {
-      id: '#82354',
-      status: 'pending',
-      customer: 'Ana Torres',
-      recipient: 'Carlos Vera',
-      pickupDistrict: 'Miraflores',
-      deliveryDistrict: 'San Isidro',
-      dimensions: '30x20x10cm',
-      charge: 'S/ 12.50',
-      driver: 'Sin Asignar',
-      createdAt: '25 Oct, 09:30',
-      scheduledDelivery: '25 Oct, 15:00',
-      amount: 'S/ 15.00'
-    },
-    {
-      id: '#82353',
-      status: 'in-progress',
-      customer: 'Luis Rojas',
-      recipient: 'Maria Fernandez',
-      pickupDistrict: 'Lince',
-      deliveryDistrict: 'Surco',
-      dimensions: '50x40x30cm',
-      charge: 'S/ 18.00',
-      driver: 'Juan Pérez',
-      createdAt: '25 Oct, 08:45',
-      scheduledDelivery: '25 Oct, 14:00',
-      amount: 'S/ 20.00'
-    },
-    {
-      id: '#82352',
-      status: 'delivered',
-      customer: 'Sofia Gomez',
-      recipient: 'Pedro Castillo',
-      pickupDistrict: 'La Molina',
-      deliveryDistrict: 'San Borja',
-      dimensions: '25x25x25cm',
-      charge: 'S/ 15.20',
-      driver: 'Mario Luna',
-      createdAt: '24 Oct, 14:00',
-      scheduledDelivery: '24 Oct, 18:30',
-      amount: 'S/ 17.00'
-    },
-    {
-      id: '#82351',
-      status: 'cancelled',
-      customer: 'Jorge Diaz',
-      recipient: 'Lucia Mendez',
-      pickupDistrict: 'Barranco',
-      deliveryDistrict: 'Chorrillos',
-      dimensions: '40x30x20cm',
-      charge: '-',
-      driver: 'N/A',
-      createdAt: '24 Oct, 11:15',
-      scheduledDelivery: '24 Oct, 16:00',
-      amount: 'S/ 16.50'
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  // Cargar pedidos al montar el componente
+  useEffect(() => {
+    loadOrders()
+  }, [])
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await getAllOrders()
+      setOrders(data)
+    } catch (err) {
+      setError('Error al cargar los pedidos. Por favor, verifica tu conexión.')
+      console.error('Error cargando pedidos:', err)
+    } finally {
+      setLoading(false)
     }
-  ])
+  }
+
+  // Buscar pedidos
+  const handleSearch = async (e) => {
+    const term = e.target.value
+    setSearchTerm(term)
+
+    try {
+      setLoading(true)
+      const data = await searchOrders(term)
+      setOrders(data)
+    } catch (err) {
+      setError('Error al buscar pedidos.')
+      console.error('Error buscando pedidos:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -104,6 +87,8 @@ function Orders() {
               <input
                 className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-0 border-none bg-gray-100 dark:bg-white/5 h-full placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 pl-2 text-base font-normal leading-normal"
                 placeholder="Buscar por ID, cliente, destinatario..."
+                value={searchTerm}
+                onChange={handleSearch}
               />
             </div>
           </label>
@@ -137,12 +122,33 @@ function Orders() {
         </button>
       </div>
 
+      {/* Estado de carga y errores */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded relative mx-4" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+          <button
+            onClick={loadOrders}
+            className="ml-4 underline hover:no-underline"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
       {/* Orders Table */}
-      <div className="relative">
-        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="inline-block min-w-full align-middle">
-            <div className="overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      {!loading && !error && (
+        <div className="relative">
+          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="inline-block min-w-full align-middle">
+              <div className="overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-white/5">
                 <tr>
                   <th scope="col" className="px-2 py-2.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
@@ -261,8 +267,9 @@ function Orders() {
             </table>
           </div>
         </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Pagination */}
       <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6">
