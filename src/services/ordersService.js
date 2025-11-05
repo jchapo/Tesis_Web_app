@@ -10,6 +10,7 @@ const transformFirestoreDoc = (docSnapshot) => {
   if (!docSnapshot.exists()) return null
 
   const data = docSnapshot.data()
+//  console.log('Firestore SDK data:', JSON.stringify(data, null, 2))
   const id = docSnapshot.id
 
   // Determinar el estado del pedido

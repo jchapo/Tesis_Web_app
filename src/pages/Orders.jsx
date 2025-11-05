@@ -85,6 +85,7 @@ function Orders() {
   }
 
   const getStatusBadge = (status) => {
+    console.log('STATUS RECIBIDO →', status)
     const statusConfig = {
       pending: {
         label: 'Pendiente',
@@ -312,16 +313,28 @@ function Orders() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-4 py-3 border-b border-gray-200/10 dark:border-white/10">
         <div className="flex-grow w-full md:w-auto">
           <label className="flex flex-col min-w-40 h-12 w-full">
-            <div className="flex w-full flex-1 items-stretch rounded-lg h-full">
+            <div className="flex w-full flex-1 items-stretch rounded-lg h-full relative">
               <div className="text-gray-400 dark:text-gray-500 flex border-none bg-gray-100 dark:bg-white/5 items-center justify-center pl-4 rounded-l-lg border-r-0">
                 <span className="material-symbols-outlined">search</span>
               </div>
               <input
-                className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-0 border-none bg-gray-100 dark:bg-white/5 h-full placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 pl-2 text-base font-normal leading-normal"
+                className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-gray-900 dark:text-white focus:outline-0 focus:ring-0 border-none bg-gray-100 dark:bg-white/5 h-full placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 pl-2 pr-10 text-base font-normal leading-normal"
                 placeholder="Buscar por ID, cliente, destinatario..."
                 value={searchTerm}
                 onChange={handleSearch}
               />
+              {searchTerm && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('')
+                    loadOrders()
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+                  title="Limpiar búsqueda"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+              )}
             </div>
           </label>
         </div>
