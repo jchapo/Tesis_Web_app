@@ -165,15 +165,15 @@ function Orders() {
 
       // Filtro por fecha
       if (filters.date) {
-        // Convertir la fecha del filtro a objeto Date
-        const filterDate = new Date(filters.date)
-        filterDate.setHours(0, 0, 0, 0)
+        // Convertir la fecha del filtro a objeto Date usando zona horaria local
+        const [year, month, day] = filters.date.split('-')
+        const filterDate = new Date(year, month - 1, day)
 
-        // Extraer la fecha del texto createdAt (formato: "DD MMM, HH:MM")
-        // Ejemplo: "05 nov, 10:30"
-        const orderDateMatch = order.createdAt.match(/(\d{2})\s+(\w{3})/)
+        // Extraer la fecha del texto createdAt (formato: "DD-mes., HH:MM")
+        // Ejemplo: "05-nov., 01:04 p. m." o "5-nov., 10:30 a. m."
+        const orderDateMatch = order.createdAt.match(/^(\d{1,2})-(\w{3})/)
         if (orderDateMatch) {
-          const [, day, monthStr] = orderDateMatch
+          const [, dayStr, monthStr] = orderDateMatch
 
           // Mapear nombres de meses en español a números
           const monthMap = {
@@ -181,14 +181,12 @@ function Orders() {
             'jul': 6, 'ago': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dic': 11
           }
 
-          const orderDate = new Date()
-          orderDate.setDate(parseInt(day))
-          orderDate.setMonth(monthMap[monthStr.toLowerCase()])
-          orderDate.setHours(0, 0, 0, 0)
+          const orderMonth = monthMap[monthStr.toLowerCase()]
+          const orderDay = parseInt(dayStr, 10)
 
           // Comparar solo día y mes
-          if (orderDate.getDate() !== filterDate.getDate() ||
-              orderDate.getMonth() !== filterDate.getMonth()) {
+          if (orderDay !== filterDate.getDate() ||
+              orderMonth !== filterDate.getMonth()) {
             return false
           }
         } else {
@@ -341,7 +339,12 @@ function Orders() {
               <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">calendar_today</span>
               <p className="text-sm font-medium leading-normal">
                 {filters.date
-                  ? new Date(filters.date).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' })
+                  ? (() => {
+                      // Crear fecha ajustando la zona horaria para evitar el cambio de día
+                      const [year, month, day] = filters.date.split('-')
+                      const date = new Date(year, month - 1, day)
+                      return date.toLocaleDateString('es-PE', { day: '2-digit', month: 'short' })
+                    })()
                   : 'Hoy'}
               </p>
               <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">expand_more</span>
