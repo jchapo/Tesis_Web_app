@@ -16,12 +16,14 @@ function Orders() {
   // Estados de filtros
   const [filters, setFilters] = useState({
     status: '',
-    district: '',
+    origin: '',
+    destination: '',
     driver: '',
     date: ''
   })
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
-  const [showDistrictDropdown, setShowDistrictDropdown] = useState(false)
+  const [showOriginDropdown, setShowOriginDropdown] = useState(false)
+  const [showDestinationDropdown, setShowDestinationDropdown] = useState(false)
   const [showDriverDropdown, setShowDriverDropdown] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
 
@@ -40,7 +42,8 @@ function Orders() {
     const handleClickOutside = (event) => {
       if (!event.target.closest('.filter-dropdown')) {
         setShowStatusDropdown(false)
-        setShowDistrictDropdown(false)
+        setShowOriginDropdown(false)
+        setShowDestinationDropdown(false)
         setShowDriverDropdown(false)
         setShowDatePicker(false)
       }
@@ -112,17 +115,24 @@ function Orders() {
     }))
   }
 
-  const getUniqueDistricts = () => {
-    const districts = new Set()
+  const getUniqueOrigins = () => {
+    const origins = new Set()
     orders.forEach(order => {
       if (order.pickupDistrict && order.pickupDistrict !== '-') {
-        districts.add(order.pickupDistrict)
-      }
-      if (order.deliveryDistrict && order.deliveryDistrict !== '-') {
-        districts.add(order.deliveryDistrict)
+        origins.add(order.pickupDistrict)
       }
     })
-    return Array.from(districts).sort()
+    return Array.from(origins).sort()
+  }
+
+  const getUniqueDestinations = () => {
+    const destinations = new Set()
+    orders.forEach(order => {
+      if (order.deliveryDistrict && order.deliveryDistrict !== '-') {
+        destinations.add(order.deliveryDistrict)
+      }
+    })
+    return Array.from(destinations).sort()
   }
 
   const getUniqueDrivers = () => {
@@ -138,10 +148,13 @@ function Orders() {
         return false
       }
 
-      // Filtro por distrito
-      if (filters.district &&
-          order.pickupDistrict !== filters.district &&
-          order.deliveryDistrict !== filters.district) {
+      // Filtro por origen (distrito recojo)
+      if (filters.origin && order.pickupDistrict !== filters.origin) {
+        return false
+      }
+
+      // Filtro por destino (distrito entrega)
+      if (filters.destination && order.deliveryDistrict !== filters.destination) {
         return false
       }
 
@@ -216,7 +229,8 @@ function Orders() {
   const clearAllFilters = () => {
     setFilters({
       status: '',
-      district: '',
+      origin: '',
+      destination: '',
       driver: '',
       date: ''
     })
@@ -430,45 +444,97 @@ function Orders() {
           )}
         </div>
 
-        {/* Filtro Distrito */}
+        {/* Filtro Origen */}
         <div className="relative filter-dropdown z-30">
           <button
             onClick={() => {
-              setShowDistrictDropdown(!showDistrictDropdown)
+              setShowOriginDropdown(!showOriginDropdown)
               setShowStatusDropdown(false)
+              setShowDestinationDropdown(false)
               setShowDriverDropdown(false)
             }}
             className={`flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg px-3 ${
-              filters.district
+              filters.origin
                 ? 'bg-primary/10 dark:bg-primary/20 text-primary'
                 : 'bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white'
             }`}
           >
             <p className="text-sm font-medium leading-normal">
-              {filters.district || 'Destino'}
+              {filters.origin || 'Origen'}
             </p>
             <span className="material-symbols-outlined text-base">expand_more</span>
           </button>
-          {showDistrictDropdown && (
+          {showOriginDropdown && (
             <div className="absolute z-40 mt-2 w-64 rounded-lg bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto">
               <div className="py-1">
-                {getUniqueDistricts().map(district => (
+                {getUniqueOrigins().map(origin => (
                   <button
-                    key={district}
+                    key={origin}
                     onClick={() => {
-                      handleFilterChange('district', district)
-                      setShowDistrictDropdown(false)
+                      handleFilterChange('origin', origin)
+                      setShowOriginDropdown(false)
                     }}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    {district}
+                    {origin}
                   </button>
                 ))}
-                {filters.district && (
+                {filters.origin && (
                   <button
                     onClick={() => {
-                      clearFilter('district')
-                      setShowDistrictDropdown(false)
+                      clearFilter('origin')
+                      setShowOriginDropdown(false)
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700"
+                  >
+                    Limpiar filtro
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Filtro Destino */}
+        <div className="relative filter-dropdown z-30">
+          <button
+            onClick={() => {
+              setShowDestinationDropdown(!showDestinationDropdown)
+              setShowStatusDropdown(false)
+              setShowOriginDropdown(false)
+              setShowDriverDropdown(false)
+            }}
+            className={`flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg px-3 ${
+              filters.destination
+                ? 'bg-primary/10 dark:bg-primary/20 text-primary'
+                : 'bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white'
+            }`}
+          >
+            <p className="text-sm font-medium leading-normal">
+              {filters.destination || 'Destino'}
+            </p>
+            <span className="material-symbols-outlined text-base">expand_more</span>
+          </button>
+          {showDestinationDropdown && (
+            <div className="absolute z-40 mt-2 w-64 rounded-lg bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto">
+              <div className="py-1">
+                {getUniqueDestinations().map(destination => (
+                  <button
+                    key={destination}
+                    onClick={() => {
+                      handleFilterChange('destination', destination)
+                      setShowDestinationDropdown(false)
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    {destination}
+                  </button>
+                ))}
+                {filters.destination && (
+                  <button
+                    onClick={() => {
+                      clearFilter('destination')
+                      setShowDestinationDropdown(false)
                     }}
                     className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700"
                   >
@@ -486,7 +552,8 @@ function Orders() {
             onClick={() => {
               setShowDriverDropdown(!showDriverDropdown)
               setShowStatusDropdown(false)
-              setShowDistrictDropdown(false)
+              setShowOriginDropdown(false)
+              setShowDestinationDropdown(false)
             }}
             className={`flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg px-3 ${
               filters.driver
@@ -531,7 +598,7 @@ function Orders() {
         </div>
 
         {/* Botón limpiar todos los filtros */}
-        {(filters.status || filters.district || filters.driver || filters.date) && (
+        {(filters.status || filters.origin || filters.destination || filters.driver || filters.date) && (
           <button
             onClick={clearAllFilters}
             className="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 px-3 hover:bg-red-500/20 dark:hover:bg-red-500/30 transition-colors"
