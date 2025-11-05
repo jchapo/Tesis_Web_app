@@ -13,6 +13,18 @@ function Orders() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
 
+  // Estados de filtros
+  const [filters, setFilters] = useState({
+    status: '',
+    district: '',
+    driver: '',
+    date: ''
+  })
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [showDistrictDropdown, setShowDistrictDropdown] = useState(false)
+  const [showDriverDropdown, setShowDriverDropdown] = useState(false)
+  const [showDatePicker, setShowDatePicker] = useState(false)
+
   // Cargar pedidos al montar el componente
   useEffect(() => {
     loadOrders()
@@ -22,6 +34,21 @@ function Orders() {
   useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, itemsPerPage])
+
+  // Cerrar dropdowns al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.filter-dropdown')) {
+        setShowStatusDropdown(false)
+        setShowDistrictDropdown(false)
+        setShowDriverDropdown(false)
+        setShowDatePicker(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const loadOrders = async () => {
     try {
@@ -76,12 +103,131 @@ function Orders() {
     return statusConfig[status] || statusConfig.pending
   }
 
+  // Obtener opciones únicas para filtros
+  const getUniqueStatuses = () => {
+    const statuses = [...new Set(orders.map(order => order.status))]
+    return statuses.map(status => ({
+      value: status,
+      label: getStatusBadge(status).label
+    }))
+  }
+
+  const getUniqueDistricts = () => {
+    const districts = new Set()
+    orders.forEach(order => {
+      if (order.pickupDistrict && order.pickupDistrict !== '-') {
+        districts.add(order.pickupDistrict)
+      }
+      if (order.deliveryDistrict && order.deliveryDistrict !== '-') {
+        districts.add(order.deliveryDistrict)
+      }
+    })
+    return Array.from(districts).sort()
+  }
+
+  const getUniqueDrivers = () => {
+    const drivers = [...new Set(orders.map(order => order.driver))]
+    return drivers.filter(driver => driver && driver !== '-').sort()
+  }
+
+  // Aplicar filtros
+  const getFilteredOrders = () => {
+    return orders.filter(order => {
+      // Filtro por estado
+      if (filters.status && order.status !== filters.status) {
+        return false
+      }
+
+      // Filtro por distrito
+      if (filters.district &&
+          order.pickupDistrict !== filters.district &&
+          order.deliveryDistrict !== filters.district) {
+        return false
+      }
+
+      // Filtro por motorizado
+      if (filters.driver && order.driver !== filters.driver) {
+        return false
+      }
+
+      // Filtro por fecha
+      if (filters.date) {
+        // Convertir la fecha del filtro a objeto Date
+        const filterDate = new Date(filters.date)
+        filterDate.setHours(0, 0, 0, 0)
+
+        // Extraer la fecha del texto createdAt (formato: "DD MMM, HH:MM")
+        // Ejemplo: "05 nov, 10:30"
+        const orderDateMatch = order.createdAt.match(/(\d{2})\s+(\w{3})/)
+        if (orderDateMatch) {
+          const [, day, monthStr] = orderDateMatch
+
+          // Mapear nombres de meses en español a números
+          const monthMap = {
+            'ene': 0, 'feb': 1, 'mar': 2, 'abr': 3, 'may': 4, 'jun': 5,
+            'jul': 6, 'ago': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dic': 11
+          }
+
+          const orderDate = new Date()
+          orderDate.setDate(parseInt(day))
+          orderDate.setMonth(monthMap[monthStr.toLowerCase()])
+          orderDate.setHours(0, 0, 0, 0)
+
+          // Comparar solo día y mes
+          if (orderDate.getDate() !== filterDate.getDate() ||
+              orderDate.getMonth() !== filterDate.getMonth()) {
+            return false
+          }
+        } else {
+          return false
+        }
+      }
+
+      return true
+    })
+  }
+
+  const filteredOrders = getFilteredOrders()
+
   // Calcular paginación
-  const totalItems = orders.length
+  const totalItems = filteredOrders.length
   const totalPages = Math.ceil(totalItems / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentOrders = orders.slice(startIndex, endIndex)
+  const currentOrders = filteredOrders.slice(startIndex, endIndex)
+
+  // Funciones para manejar filtros
+  const handleFilterChange = (filterType, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: value
+    }))
+    setCurrentPage(1)
+  }
+
+  const clearFilter = (filterType) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: ''
+    }))
+    setCurrentPage(1)
+  }
+
+  const clearAllFilters = () => {
+    setFilters({
+      status: '',
+      district: '',
+      driver: '',
+      date: ''
+    })
+    setCurrentPage(1)
+  }
+
+  // Obtener fecha de hoy en formato para input date
+  const getTodayDate = () => {
+    const today = new Date()
+    return today.toISOString().split('T')[0]
+  }
 
   // Funciones de navegación de páginas
   const goToPage = (page) => {
@@ -168,11 +314,63 @@ function Orders() {
           </label>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex h-12 min-w-[84px] cursor-pointer items-center justify-center gap-x-2 rounded-lg bg-gray-100 dark:bg-white/5 px-4">
-            <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">calendar_today</span>
-            <p className="text-gray-900 dark:text-white text-sm font-medium leading-normal">Hoy</p>
-            <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">expand_more</span>
-          </button>
+          {/* Filtro de Fecha */}
+          <div className="relative filter-dropdown">
+            <button
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className={`flex h-12 min-w-[84px] cursor-pointer items-center justify-center gap-x-2 rounded-lg px-4 ${
+                filters.date
+                  ? 'bg-primary/10 dark:bg-primary/20 text-primary'
+                  : 'bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white'
+              }`}
+            >
+              <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">calendar_today</span>
+              <p className="text-sm font-medium leading-normal">
+                {filters.date
+                  ? new Date(filters.date).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' })
+                  : 'Hoy'}
+              </p>
+              <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">expand_more</span>
+            </button>
+            {showDatePicker && (
+              <div className="absolute z-40 mt-2 p-4 rounded-lg bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Seleccionar fecha:
+                </label>
+                <input
+                  type="date"
+                  value={filters.date}
+                  onChange={(e) => {
+                    handleFilterChange('date', e.target.value)
+                    setShowDatePicker(false)
+                  }}
+                  className="form-input rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-primary focus:border-primary"
+                />
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => {
+                      handleFilterChange('date', getTodayDate())
+                      setShowDatePicker(false)
+                    }}
+                    className="flex-1 px-3 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Hoy
+                  </button>
+                  {filters.date && (
+                    <button
+                      onClick={() => {
+                        clearFilter('date')
+                        setShowDatePicker(false)
+                      }}
+                      className="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] gap-2">
             <span className="material-symbols-outlined">add_circle</span>
             <span className="truncate">Crear Pedido</span>
@@ -181,19 +379,167 @@ function Orders() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 p-4 overflow-x-auto">
-        <button className="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-gray-100 dark:bg-white/5 px-3">
-          <p className="text-gray-900 dark:text-white text-sm font-medium leading-normal">Estado</p>
-          <span className="material-symbols-outlined text-gray-500 text-base">expand_more</span>
-        </button>
-        <button className="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-gray-100 dark:bg-white/5 px-3">
-          <p className="text-gray-900 dark:text-white text-sm font-medium leading-normal">Distrito</p>
-          <span className="material-symbols-outlined text-gray-500 text-base">expand_more</span>
-        </button>
-        <button className="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-gray-100 dark:bg-white/5 px-3">
-          <p className="text-gray-900 dark:text-white text-sm font-medium leading-normal">Motorizado</p>
-          <span className="material-symbols-outlined text-gray-500 text-base">expand_more</span>
-        </button>
+      <div className="flex gap-3 p-4 items-center relative">
+        {/* Filtro Estado */}
+        <div className="relative filter-dropdown z-30">
+          <button
+            onClick={() => {
+              setShowStatusDropdown(!showStatusDropdown)
+              setShowDistrictDropdown(false)
+              setShowDriverDropdown(false)
+            }}
+            className={`flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg px-3 ${
+              filters.status
+                ? 'bg-primary/10 dark:bg-primary/20 text-primary'
+                : 'bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white'
+            }`}
+          >
+            <p className="text-sm font-medium leading-normal">
+              {filters.status ? getStatusBadge(filters.status).label : 'Estado'}
+            </p>
+            <span className="material-symbols-outlined text-base">expand_more</span>
+          </button>
+          {showStatusDropdown && (
+            <div className="absolute z-40 mt-2 w-48 rounded-lg bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
+              <div className="py-1">
+                {getUniqueStatuses().map(status => (
+                  <button
+                    key={status.value}
+                    onClick={() => {
+                      handleFilterChange('status', status.value)
+                      setShowStatusDropdown(false)
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    {status.label}
+                  </button>
+                ))}
+                {filters.status && (
+                  <button
+                    onClick={() => {
+                      clearFilter('status')
+                      setShowStatusDropdown(false)
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700"
+                  >
+                    Limpiar filtro
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Filtro Distrito */}
+        <div className="relative filter-dropdown z-30">
+          <button
+            onClick={() => {
+              setShowDistrictDropdown(!showDistrictDropdown)
+              setShowStatusDropdown(false)
+              setShowDriverDropdown(false)
+            }}
+            className={`flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg px-3 ${
+              filters.district
+                ? 'bg-primary/10 dark:bg-primary/20 text-primary'
+                : 'bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white'
+            }`}
+          >
+            <p className="text-sm font-medium leading-normal">
+              {filters.district || 'Destino'}
+            </p>
+            <span className="material-symbols-outlined text-base">expand_more</span>
+          </button>
+          {showDistrictDropdown && (
+            <div className="absolute z-40 mt-2 w-64 rounded-lg bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto">
+              <div className="py-1">
+                {getUniqueDistricts().map(district => (
+                  <button
+                    key={district}
+                    onClick={() => {
+                      handleFilterChange('district', district)
+                      setShowDistrictDropdown(false)
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    {district}
+                  </button>
+                ))}
+                {filters.district && (
+                  <button
+                    onClick={() => {
+                      clearFilter('district')
+                      setShowDistrictDropdown(false)
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700"
+                  >
+                    Limpiar filtro
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Filtro Motorizado */}
+        <div className="relative filter-dropdown z-30">
+          <button
+            onClick={() => {
+              setShowDriverDropdown(!showDriverDropdown)
+              setShowStatusDropdown(false)
+              setShowDistrictDropdown(false)
+            }}
+            className={`flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg px-3 ${
+              filters.driver
+                ? 'bg-primary/10 dark:bg-primary/20 text-primary'
+                : 'bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white'
+            }`}
+          >
+            <p className="text-sm font-medium leading-normal">
+              {filters.driver || 'Motorizado'}
+            </p>
+            <span className="material-symbols-outlined text-base">expand_more</span>
+          </button>
+          {showDriverDropdown && (
+            <div className="absolute z-40 mt-2 w-56 rounded-lg bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto">
+              <div className="py-1">
+                {getUniqueDrivers().map(driver => (
+                  <button
+                    key={driver}
+                    onClick={() => {
+                      handleFilterChange('driver', driver)
+                      setShowDriverDropdown(false)
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    {driver}
+                  </button>
+                ))}
+                {filters.driver && (
+                  <button
+                    onClick={() => {
+                      clearFilter('driver')
+                      setShowDriverDropdown(false)
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700"
+                  >
+                    Limpiar filtro
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Botón limpiar todos los filtros */}
+        {(filters.status || filters.district || filters.driver || filters.date) && (
+          <button
+            onClick={clearAllFilters}
+            className="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 px-3 hover:bg-red-500/20 dark:hover:bg-red-500/30 transition-colors"
+          >
+            <span className="material-symbols-outlined text-base">close</span>
+            <p className="text-sm font-medium leading-normal">Limpiar filtros</p>
+          </button>
+        )}
       </div>
 
       {/* Estado de carga y errores */}
@@ -218,7 +564,7 @@ function Orders() {
 
       {/* Orders Table */}
       {!loading && !error && (
-        <div className="relative">
+        <div className="relative z-10">
           <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="inline-block min-w-full align-middle">
               <div className="overflow-hidden">
