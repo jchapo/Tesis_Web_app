@@ -9,10 +9,19 @@ function Orders() {
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
 
+  // Estados de paginación
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+
   // Cargar pedidos al montar el componente
   useEffect(() => {
     loadOrders()
   }, [])
+
+  // Reset página cuando cambia la búsqueda o items por página
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, itemsPerPage])
 
   const loadOrders = async () => {
     try {
@@ -65,6 +74,71 @@ function Orders() {
       }
     }
     return statusConfig[status] || statusConfig.pending
+  }
+
+  // Calcular paginación
+  const totalItems = orders.length
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentOrders = orders.slice(startIndex, endIndex)
+
+  // Funciones de navegación de páginas
+  const goToPage = (page) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)))
+  }
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1)
+    }
+  }
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1)
+    }
+  }
+
+  // Generar array de números de página para mostrar
+  const getPageNumbers = () => {
+    const pages = []
+    const maxPagesToShow = 5
+
+    if (totalPages <= maxPagesToShow) {
+      // Mostrar todas las páginas si son pocas
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      // Lógica para mostrar páginas con puntos suspensivos
+      if (currentPage <= 3) {
+        // Cerca del inicio
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i)
+        }
+        pages.push('...')
+        pages.push(totalPages)
+      } else if (currentPage >= totalPages - 2) {
+        // Cerca del final
+        pages.push(1)
+        pages.push('...')
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i)
+        }
+      } else {
+        // En el medio
+        pages.push(1)
+        pages.push('...')
+        pages.push(currentPage - 1)
+        pages.push(currentPage)
+        pages.push(currentPage + 1)
+        pages.push('...')
+        pages.push(totalPages)
+      }
+    }
+
+    return pages
   }
 
   return (
@@ -193,7 +267,7 @@ function Orders() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {orders.map((order) => {
+                {currentOrders.map((order) => {
                   const status = getStatusBadge(order.status)
                   return (
                     <tr key={order.id} className="hover:bg-gray-100 dark:hover:bg-white/5">
@@ -272,50 +346,83 @@ function Orders() {
       )}
 
       {/* Pagination */}
-      <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6">
-        <div className="flex flex-1 justify-between sm:hidden">
-          <a href="#" className="relative inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-            Anterior
-          </a>
-          <a href="#" className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-            Siguiente
-          </a>
-        </div>
-        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm text-gray-700 dark:text-gray-400">
-              {' '}
-              Mostrando <span className="font-medium">1</span> a <span className="font-medium">10</span> de{' '}
-              <span className="font-medium">97</span> resultados{' '}
-            </p>
+      {!loading && !error && totalItems > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 dark:border-gray-700 px-4 py-3 gap-4">
+          {/* Selector de items por página */}
+          <div className="flex items-center gap-2">
+            <label htmlFor="itemsPerPage" className="text-sm text-gray-700 dark:text-gray-400">
+              Mostrar:
+            </label>
+            <select
+              id="itemsPerPage"
+              value={itemsPerPage}
+              onChange={(e) => setItemsPerPage(Number(e.target.value))}
+              className="form-select rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-primary focus:border-primary"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+            <span className="text-sm text-gray-700 dark:text-gray-400">por página</span>
           </div>
-          <div>
-            <nav aria-label="Pagination" className="isolate inline-flex -space-x-px rounded-md shadow-sm">
-              <a href="#" className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:text-gray-500 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 focus:z-20 focus:outline-offset-0">
-                <span className="material-symbols-outlined text-sm">chevron_left</span>
-              </a>
-              <a href="#" aria-current="page" className="relative z-10 inline-flex items-center bg-primary/10 dark:bg-primary/20 text-primary px-4 py-2 text-sm font-semibold focus:z-20">
-                1
-              </a>
-              <a href="#" className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 focus:z-20">
-                2
-              </a>
-              <a href="#" className="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 focus:z-20 md:inline-flex">
-                3
-              </a>
-              <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 focus:outline-offset-0">
-                ...
-              </span>
-              <a href="#" className="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 focus:z-20 md:inline-flex">
-                8
-              </a>
-              <a href="#" className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 dark:text-gray-500 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 focus:z-20 focus:outline-offset-0">
-                <span className="material-symbols-outlined text-sm">chevron_right</span>
-              </a>
-            </nav>
+
+          {/* Info de paginación */}
+          <div className="text-sm text-gray-700 dark:text-gray-400">
+            Mostrando <span className="font-medium">{startIndex + 1}</span> a{' '}
+            <span className="font-medium">{Math.min(endIndex, totalItems)}</span> de{' '}
+            <span className="font-medium">{totalItems}</span> resultados
           </div>
+
+          {/* Controles de paginación */}
+          <nav aria-label="Pagination" className="isolate inline-flex -space-x-px rounded-md shadow-sm">
+            {/* Botón Anterior */}
+            <button
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:text-gray-500 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_left</span>
+            </button>
+
+            {/* Números de página */}
+            {getPageNumbers().map((page, index) => {
+              if (page === '...') {
+                return (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-700"
+                  >
+                    ...
+                  </span>
+                )
+              }
+
+              return (
+                <button
+                  key={page}
+                  onClick={() => goToPage(page)}
+                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 ${
+                    currentPage === page
+                      ? 'z-10 bg-primary/10 dark:bg-primary/20 text-primary ring-1 ring-inset ring-primary'
+                      : 'text-gray-900 dark:text-white ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-white/5'
+                  }`}
+                >
+                  {page}
+                </button>
+              )
+            })}
+
+            {/* Botón Siguiente */}
+            <button
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+              className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 dark:text-gray-500 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="material-symbols-outlined text-sm">chevron_right</span>
+            </button>
+          </nav>
         </div>
-      </div>
+      )}
     </div>
   )
 }
