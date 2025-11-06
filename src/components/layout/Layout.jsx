@@ -3,14 +3,18 @@ import Header from './Header'
 
 function Layout({ children }) {
   return (
-    <div className="relative flex h-auto min-h-screen w-full overflow-hidden">
+    <div className="flex h-screen w-full overflow-hidden">
+      {/* Sidebar fijo */}
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+
+      {/* Contenedor principal */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        {/* Header fijo */}
         <Header />
-        <main className="flex-1 overflow-auto">
-          <div className="w-full max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
-            {children}
-          </div>
+
+        {/* Contenido scrolleable */}
+        <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+          {children}
         </main>
       </div>
     </div>

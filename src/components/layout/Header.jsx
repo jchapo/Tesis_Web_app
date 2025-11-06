@@ -60,7 +60,7 @@ function Header() {
   }
 
   return (
-    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200/10 dark:border-white/10 px-6 md:px-10 py-3 bg-background-light dark:bg-background-dark sticky top-0 z-10">
+    <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200/10 dark:border-white/10 px-6 md:px-10 py-3 bg-background-light dark:bg-background-dark flex-shrink-0">
       <div className="flex items-center gap-4 text-black dark:text-white">
         {breadcrumb.showBack && (
           <button

@@ -650,7 +650,7 @@ function Orders() {
 
       {/* Orders Table */}
       {!loading && !error && (
-        <div className="relative z-10">
+        <div className="relative z-10 px-4">
           <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="inline-block min-w-full align-middle">
               <div className="overflow-hidden">
