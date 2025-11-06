@@ -15,7 +15,7 @@ El proyecto necesita las siguientes credenciales y API keys:
 - `VITE_FIREBASE_APP_ID` - ID de la aplicación
 
 ### Google Maps API
-- `VITE_GOOGLE_MAPS_API_KEY` - API Key de Google Maps Geocoding
+- `VITE_GOOGLE_GEOCODING_API_KEY` - API Key de Google Maps Geocoding
 
 ## Pasos para Configurar
 
@@ -57,7 +57,7 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=1040363605459
 VITE_FIREBASE_APP_ID=1:1040363605459:web:0c91de0f7fa83a64d1b326
 
 # Google Maps Geocoding API Key
-VITE_GOOGLE_MAPS_API_KEY=AIzaSyCuJ6KpGRjj...tu_api_key_aqui
+VITE_GOOGLE_GEOCODING_API_KEY=AIzaSyCuJ6KpGRjj...tu_api_key_aqui
 ```
 
 ### 4. Reiniciar el servidor de desarrollo
@@ -102,7 +102,7 @@ Si ves este error al crear un pedido, verifica que:
 
 ### Fallback Configuration
 
-Si no configuras las variables de entorno, la aplicación usará valores por defecto para Firebase. Sin embargo, **debes configurar** `VITE_GOOGLE_MAPS_API_KEY` para que la geocodificación funcione correctamente.
+Si no configuras las variables de entorno, la aplicación usará valores por defecto para Firebase. Sin embargo, **debes configurar** `VITE_GOOGLE_GEOCODING_API_KEY` para que la geocodificación funcione correctamente.
 
 ## Estructura del Proyecto
 
@@ -115,7 +115,7 @@ Si no configuras las variables de entorno, la aplicación usará valores por def
 │   ├── config/
 │   │   └── firebase.js     # Lee variables de entorno
 │   ├── utils/
-│   │   └── geocoding.js    # Usa VITE_GOOGLE_MAPS_API_KEY
+│   │   └── geocoding.js    # Usa VITE_GOOGLE_GEOCODING_API_KEY
 │   └── services/
 │       └── orderCreateService.js
 ```

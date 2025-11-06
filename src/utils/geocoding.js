@@ -2,7 +2,7 @@
  * Utilidades para geocodificación y extracción de coordenadas
  */
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_GEOCODING_API_KEY
 
 // Coordenadas por defecto (Lima, Perú)
 const DEFAULT_COORDS = {

@@ -8,6 +8,10 @@ import OrderCreate from './pages/OrderCreate'
 import OrderView from './pages/OrderView'
 import OrderEdit from './pages/OrderEdit'
 import OrderAssign from './pages/OrderAssign'
+import Customers from './pages/Customers'
+import CustomerCreate from './pages/CostumerCreate'
+import Drivers from './pages/Drivers'
+import DriverCreate from './pages/DriverCreate'
 
 function App() {
   return (
@@ -31,6 +35,10 @@ function App() {
                       <Route path="/orders/:orderId/view" element={<OrderView />} />
                       <Route path="/orders/:orderId/edit" element={<OrderEdit />} />
                       <Route path="/orders/:orderId/assign" element={<OrderAssign />} />
+                      <Route path="/customers" element={<Customers />} />
+                      <Route path="/customers/create" element={<CustomerCreate />} />
+                      <Route path="/drivers" element={<Drivers />} />
+                      <Route path="/drivers/create" element={<DriverCreate />} />
                     </Routes>
                   </Layout>
                 </ProtectedRoute>
