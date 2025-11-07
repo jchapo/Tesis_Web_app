@@ -6,7 +6,7 @@ import { db } from '../config/firebase'
  * @param {Object} docSnapshot - DocumentSnapshot de Firestore
  * @returns {Object} - Pedido transformado
  */
-const transformFirestoreDoc = (docSnapshot) => {
+export const transformFirestoreDoc = (docSnapshot) => {
   if (!docSnapshot.exists()) return null
 
   const data = docSnapshot.data()

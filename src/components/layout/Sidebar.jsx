@@ -8,7 +8,7 @@ function Sidebar() {
     { path: '/orders', icon: 'local_shipping', label: 'Pedidos' },
     { path: '/drivers', icon: 'two_wheeler', label: 'Motorizados' },
     { path: '/customers', icon: 'groups', label: 'Clientes' },
-    { path: '/reports', icon: 'analytics', label: 'Reportes' },
+    { path: '/closing', icon: 'task_alt', label: 'Cierre Diario' },
   ]
 
   return (
@@ -32,7 +32,7 @@ function Sidebar() {
             key={item.path}
             to={item.path}
             className={`p-3 rounded-lg ${
-              location.pathname === item.path
+              location.pathname.startsWith(item.path)
                 ? 'bg-primary/10 dark:bg-primary/20 text-primary'
                 : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'
             }`}

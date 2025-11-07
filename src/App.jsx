@@ -12,6 +12,7 @@ import Customers from './pages/Customers'
 import CustomerCreate from './pages/CostumerCreate'
 import Drivers from './pages/Drivers'
 import DriverCreate from './pages/DriverCreate'
+import ClosingDashboard from './pages/ClosingDashboard'
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
                       <Route path="/customers/create" element={<CustomerCreate />} />
                       <Route path="/drivers" element={<Drivers />} />
                       <Route path="/drivers/create" element={<DriverCreate />} />
+                      <Route path="/closing" element={<ClosingDashboard />} />
                     </Routes>
                   </Layout>
                 </ProtectedRoute>
