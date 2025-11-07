@@ -9,10 +9,6 @@ function Orders() {
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
 
-  // Estados de paginación
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(10)
-
   // Estados de filtros
   const [filters, setFilters] = useState({
     status: '',
@@ -31,11 +27,6 @@ function Orders() {
   useEffect(() => {
     loadOrders()
   }, [])
-
-  // Reset página cuando cambia la búsqueda o items por página
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm, itemsPerPage])
 
   // Cerrar dropdowns al hacer clic fuera
   useEffect(() => {
@@ -201,12 +192,8 @@ function Orders() {
 
   const filteredOrders = getFilteredOrders()
 
-  // Calcular paginación
-  const totalItems = filteredOrders.length
-  const totalPages = Math.ceil(totalItems / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentOrders = filteredOrders.slice(startIndex, endIndex)
+  const currentOrders = filteredOrders
+
 
   // Funciones para manejar filtros
   const handleFilterChange = (filterType, value) => {
@@ -653,9 +640,9 @@ function Orders() {
         <div className="relative z-10 px-4">
           <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="inline-block min-w-full align-middle">
-              <div className="overflow-hidden">
+              <div className="h-[calc(100vh-300px)] overflow-y-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-white/5">
+              <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
                 <tr>
                   <th scope="col" className="px-2 py-2.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     ID Pedido
@@ -690,7 +677,7 @@ function Orders() {
                   <th scope="col" className="px-2 py-2.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Monto
                   </th>
-                  <th scope="col" className="px-2 py-2.5 text-right text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider sticky-col bg-gray-50 dark:bg-white/5">
+                  <th scope="col" className="px-2 py-2.5 text-right text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider sticky-col">
                     Acciones
                   </th>
                 </tr>
@@ -771,84 +758,6 @@ function Orders() {
         </div>
       )}
 
-      {/* Pagination */}
-      {!loading && !error && totalItems > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 dark:border-gray-700 px-4 py-3 gap-4">
-          {/* Selector de items por página */}
-          <div className="flex items-center gap-2">
-            <label htmlFor="itemsPerPage" className="text-sm text-gray-700 dark:text-gray-400">
-              Mostrar:
-            </label>
-            <select
-              id="itemsPerPage"
-              value={itemsPerPage}
-              onChange={(e) => setItemsPerPage(Number(e.target.value))}
-              className="form-select rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-primary focus:border-primary"
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-            </select>
-            <span className="text-sm text-gray-700 dark:text-gray-400">por página</span>
-          </div>
-
-          {/* Info de paginación */}
-          <div className="text-sm text-gray-700 dark:text-gray-400">
-            Mostrando <span className="font-medium">{startIndex + 1}</span> a{' '}
-            <span className="font-medium">{Math.min(endIndex, totalItems)}</span> de{' '}
-            <span className="font-medium">{totalItems}</span> resultados
-          </div>
-
-          {/* Controles de paginación */}
-          <nav aria-label="Pagination" className="isolate inline-flex -space-x-px rounded-md shadow-sm">
-            {/* Botón Anterior */}
-            <button
-              onClick={goToPreviousPage}
-              disabled={currentPage === 1}
-              className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:text-gray-500 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="material-symbols-outlined text-sm">chevron_left</span>
-            </button>
-
-            {/* Números de página */}
-            {getPageNumbers().map((page, index) => {
-              if (page === '...') {
-                return (
-                  <span
-                    key={`ellipsis-${index}`}
-                    className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-700"
-                  >
-                    ...
-                  </span>
-                )
-              }
-
-              return (
-                <button
-                  key={page}
-                  onClick={() => goToPage(page)}
-                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 ${
-                    currentPage === page
-                      ? 'z-10 bg-primary/10 dark:bg-primary/20 text-primary ring-1 ring-inset ring-primary'
-                      : 'text-gray-900 dark:text-white ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-white/5'
-                  }`}
-                >
-                  {page}
-                </button>
-              )
-            })}
-
-            {/* Botón Siguiente */}
-            <button
-              onClick={goToNextPage}
-              disabled={currentPage === totalPages}
-              className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 dark:text-gray-500 ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="material-symbols-outlined text-sm">chevron_right</span>
-            </button>
-          </nav>
-        </div>
-      )}
     </div>
   )
 }
