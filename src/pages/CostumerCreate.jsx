@@ -18,7 +18,8 @@ function CustomerCreate() {
     datosEmpresariales: true, // Siempre true para clientes
     empresa: '',
     ruc: '',
-    razonSocial: ''
+    razonSocial: '',
+    distrito: ''
   })
 
   const handleInputChange = (e) => {
@@ -36,14 +37,14 @@ function CustomerCreate() {
 
     try {
       // Validar campos obligatorios (incluyendo datos empresariales)
-      if (!formData.nombre || !formData.apellido || !formData.email || !formData.telefono) {
+      if (!formData.email || !formData.telefono) {
         setError('Por favor completa todos los campos obligatorios')
         setLoading(false)
         return
       }
 
       // Validar datos empresariales obligatorios
-      if (!formData.empresa || !formData.ruc || !formData.razonSocial) {
+      if (!formData.empresa || !formData.distrito) {
         setError('Por favor completa todos los datos empresariales')
         setLoading(false)
         return
@@ -54,7 +55,7 @@ function CustomerCreate() {
       if (result.success) {
         navigate('/customers', {
           state: {
-            message: `Cliente ${formData.nombre} ${formData.apellido} creado exitosamente`,
+            message: `Cliente ${formData.empresa}} creado exitosamente`,
             type: 'success'
           }
         })
@@ -202,7 +203,7 @@ function CustomerCreate() {
 
                   <div>
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block" htmlFor="ruc">
-                      RUC *
+                      RUC 
                     </label>
                     <input
                       type="text"
@@ -212,13 +213,13 @@ function CustomerCreate() {
                       onChange={handleInputChange}
                       placeholder="20123456789"
                       className="form-input w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50"
-                      required
+                      
                     />
                   </div>
 
-                  <div className="md:col-span-2">
+                  <div>
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block" htmlFor="razonSocial">
-                      Razón Social *
+                      Razón Social 
                     </label>
                     <input
                       type="text"
@@ -228,8 +229,66 @@ function CustomerCreate() {
                       onChange={handleInputChange}
                       placeholder="LOGISTICS INC. S.A.C."
                       className="form-input w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50"
-                      required
                     />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block" htmlFor="distrito">
+                      DISTRITO 
+                    </label>
+                    <select
+                      id="distrito"
+                      name="distrito"
+                      value={formData.distrito}
+                      onChange={handleInputChange}
+                      className="form-select w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50"
+                      required
+                    >
+                      <option value="">Selecciona un distrito</option>
+                      <option value="Ate (Lima)">Ate (Lima)</option>
+                      <option value="Barranco (Lima)">Barranco (Lima)</option>
+                      <option value="Bellavista (Callao)">Bellavista (Callao)</option>
+                      <option value="Breña (Lima)">Breña (Lima)</option>
+                      <option value="Callao (Callao)">Callao (Callao)</option>
+                      <option value="Carabayllo (Lima)">Carabayllo (Lima)</option>
+                      <option value="Carmen de la Legua (Callao)">Carmen de la Legua (Callao)</option>
+                      <option value="Cercado de Lima (Lima)">Cercado de Lima (Lima)</option>
+                      <option value="Chorrillos (Lima)">Chorrillos (Lima)</option>
+                      <option value="Comas (Lima)">Comas (Lima)</option>
+                      <option value="El Agustino (Lima)">El Agustino (Lima)</option>
+                      <option value="Huachipa (Ate, Lima)">Huachipa (Ate, Lima)</option>
+                      <option value="Independencia (Lima)">Independencia (Lima)</option>
+                      <option value="Jesús María (Lima)">Jesús María (Lima)</option>
+                      <option value="La Molina (Lima)">La Molina (Lima)</option>
+                      <option value="La Perla (Callao)">La Perla (Callao)</option>
+                      <option value="La Punta (Callao)">La Punta (Callao)</option>
+                      <option value="La Victoria (Lima)">La Victoria (Lima)</option>
+                      <option value="Lince (Lima)">Lince (Lima)</option>
+                      <option value="Los Olivos (Lima)">Los Olivos (Lima)</option>
+                      <option value="Lurín (Lima)">Lurín (Lima)</option>
+                      <option value="Magdalena del Mar (Lima)">Magdalena del Mar (Lima)</option>
+                      <option value="Mi Perú (Callao)">Mi Perú (Callao)</option>
+                      <option value="Miraflores (Lima)">Miraflores (Lima)</option>
+                      <option value="Oquendo (Callao)">Oquendo (Callao)</option>
+                      <option value="Pueblo Libre (Lima)">Pueblo Libre (Lima)</option>
+                      <option value="Puente Piedra (Lima)">Puente Piedra (Lima)</option>
+                      <option value="Rímac (Lima)">Rímac (Lima)</option>
+                      <option value="San Borja (Lima)">San Borja (Lima)</option>
+                      <option value="San Isidro (Lima)">San Isidro (Lima)</option>
+                      <option value="San Juan de Lurigancho (Lima)">San Juan de Lurigancho (Lima)</option>
+                      <option value="San Juan de Miraflores (Lima)">San Juan de Miraflores (Lima)</option>
+                      <option value="San Luis (Lima)">San Luis (Lima)</option>
+                      <option value="San Martín de Porres (Lima)">San Martín de Porres (Lima)</option>
+                      <option value="San Miguel (Lima)">San Miguel (Lima)</option>
+                      <option value="Santa Anita (Lima)">Santa Anita (Lima)</option>
+                      <option value="Santa Clara (Ate, Lima)">Santa Clara (Ate, Lima)</option>
+                      <option value="Santa Rosa (Callao)">Santa Rosa (Callao)</option>
+                      <option value="Surco (Lima)">Surco (Lima)</option>
+                      <option value="Surquillo (Lima)">Surquillo (Lima)</option>
+                      <option value="Ventanilla (Callao)">Ventanilla (Callao)</option>
+                      <option value="Villa El Salvador (Lima)">Villa El Salvador (Lima)</option>
+                      <option value="Villa María del Triunfo (Lima)">Villa María del Triunfo (Lima)</option>
+                    </select>
                   </div>
                 </div>
               </div>

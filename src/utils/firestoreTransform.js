@@ -211,9 +211,9 @@ export const transformOrderForView = (fields) => {
         }
       : null,
     costs: {
-      shipping: `S/ ${((fields.pago?.monto || 0) / 100).toFixed(2)}`,
-      insurance: `S/ ${((fields.pago?.comision || 0) / 100).toFixed(2)}`,
-      total: `S/ ${((fields.pago?.montoTotal || 0) / 100).toFixed(2)}`
+      total: `S/ ${((fields.pago?.montoTotal || 0) ).toFixed(2)}`,
+      commission: `S/ ${((fields.pago?.comision || 0) ).toFixed(2)}`,
+      clientAmount: `S/ ${((fields.pago?.monto || 0) ).toFixed(2)}`
     },
     timeline,
     photos: {

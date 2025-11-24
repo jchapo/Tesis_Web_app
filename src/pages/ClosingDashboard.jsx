@@ -202,28 +202,33 @@ function ClosingDashboard() {
         </tr>
 
         {/* Filas de pedidos */}
-        {orders.map((order) => (
-          <tr key={order.id} className="hover:bg-gray-100 dark:hover:bg-white/5">
-            <td className="px-2 py-2 whitespace-nowrap text-xs font-semibold text-gray-800 dark:text-gray-200">
-              {order.id}
-            </td>
-            <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
-              {order.customer}
-            </td>
-            <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
-              {order.recipient || '-'}
-            </td>
-            <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
-              {order.status}
-            </td>
-            <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
-              {order.driver}
-            </td>
-            <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
-              {order.amount}
-            </td>
-          </tr>
-        ))}
+        {orders.map((order) => {
+          const status = getStatusBadge(order.status)
+          return (
+            <tr key={order.id} className="hover:bg-gray-100 dark:hover:bg-white/5">
+              <td className="px-2 py-2 whitespace-nowrap text-xs font-semibold text-gray-800 dark:text-gray-200">
+                {order.id}
+              </td>
+              <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
+                {order.customer}
+              </td>
+              <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
+                {order.recipient || '-'}
+              </td>
+              <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
+                <span className={`inline-flex items-center gap-x-1 py-1 px-2 rounded-full text-[10px] font-medium ${status.className}`}>
+                  {status.label}
+                </span>
+              </td>
+              <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
+                {order.driver}
+              </td>
+              <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
+                {order.amount}
+              </td>
+            </tr>
+          )
+        })}
 
         {/* Subtotal */}
         <tr className="bg-gray-50 dark:bg-gray-800/40 font-bold">

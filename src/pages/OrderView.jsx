@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getOrderById } from '../services/ordersService'
+import { getOrderById, assignDriverToOrder } from '../services/ordersService'
 import { transformOrderForView } from '../utils/firestoreTransform'
+import DriverAssignmentModal from '../components/DriverAssignmentModal'
 
 function OrderView() {
   const { orderId: encodedOrderId } = useParams()
@@ -11,6 +12,8 @@ function OrderView() {
   const [orderData, setOrderData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [showDriverModal, setShowDriverModal] = useState(false)
+  const [assigningDriver, setAssigningDriver] = useState(false)
 
   useEffect(() => {
     loadOrder()
@@ -34,6 +37,27 @@ function OrderView() {
       console.error('Error cargando pedido:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleAssignDriver = async (driverData) => {
+    try {
+      setAssigningDriver(true)
+      const result = await assignDriverToOrder(orderId, driverData, 'recojo')
+
+      if (result.success) {
+        // Recargar los datos del pedido
+        await loadOrder()
+        // Mostrar mensaje de éxito (opcional)
+        console.log('✅ Motorizado asignado correctamente')
+      } else {
+        setError(result.message)
+      }
+    } catch (err) {
+      setError('Error al asignar motorizado')
+      console.error('Error asignando motorizado:', err)
+    } finally {
+      setAssigningDriver(false)
     }
   }
 
@@ -79,7 +103,22 @@ function OrderView() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto relative">
+      {/* Overlay de carga global */}
+      {assigningDriver && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-8 flex flex-col items-center gap-4 shadow-2xl">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary"></div>
+            <p className="text-gray-900 dark:text-white font-semibold text-lg">
+              Asignando motorizado...
+            </p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              Por favor espera mientras actualizamos la información
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Page Heading */}
       <header className="flex flex-wrap justify-between items-center gap-4 mb-8">
         <div className="flex flex-col gap-1">
@@ -142,18 +181,13 @@ function OrderView() {
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
             <h3 className="text-gray-900 dark:text-white text-lg font-bold tracking-tight mb-4">Desglose de Costos</h3>
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Costo del envío</span>
-                <span className="text-gray-800 dark:text-gray-200 font-medium">{orderData.costs.shipping}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Seguro</span>
-                <span className="text-gray-800 dark:text-gray-200 font-medium">{orderData.costs.insurance}</span>
-              </div>
-              <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
               <div className="flex justify-between font-bold">
-                <span className="text-gray-900 dark:text-white">Total</span>
+                <span className="text-gray-900 dark:text-white">Monto Total</span>
                 <span className="text-primary">{orderData.costs.total}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Comisión</span>
+                <span className="text-gray-800 dark:text-gray-200 font-medium">{orderData.costs.commission}</span>
               </div>
             </div>
           </div>
@@ -249,21 +283,38 @@ function OrderView() {
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <button className="flex-1 flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-sm font-bold hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors">
-                    <span className="material-symbols-outlined text-lg">chat</span>
-                    <span>Contactar</span>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => setShowDriverModal(true)}
+                    className="w-full flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-lg">swap_horiz</span>
+                    <span>Cambiar Motorizado</span>
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white text-sm font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                    <span className="material-symbols-outlined text-lg">route</span>
-                    <span>Ver Ruta</span>
-                  </button>
+                  <div className="flex gap-2">
+                    <button className="flex-1 flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary text-sm font-bold hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors">
+                      <span className="material-symbols-outlined text-lg">chat</span>
+                      <span>Contactar</span>
+                    </button>
+                    <button className="flex-1 flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white text-sm font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                      <span className="material-symbols-outlined text-lg">route</span>
+                      <span>Ver Ruta</span>
+                    </button>
+                  </div>
                 </div>
               </>
             ) : (
               <div className="text-center py-8">
                 <span className="material-symbols-outlined text-gray-400 dark:text-gray-500 text-4xl mb-2">person_off</span>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">Sin motorizado asignado</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">Sin motorizado asignado</p>
+                <button
+                  onClick={() => setShowDriverModal(true)}
+                  disabled={assigningDriver}
+                  className="flex items-center justify-center gap-2 h-10 px-6 rounded-lg bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mx-auto"
+                >
+                  <span className="material-symbols-outlined text-lg">add</span>
+                  <span>Asignar Motorizado</span>
+                </button>
               </div>
             )}
           </div>
@@ -292,6 +343,15 @@ function OrderView() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Asignación de Motorizado */}
+      <DriverAssignmentModal
+        isOpen={showDriverModal}
+        onClose={() => setShowDriverModal(false)}
+        onAssign={handleAssignDriver}
+        currentDriver={orderData?.driver?.name || null}
+        isAssigning={assigningDriver}
+      />
     </div>
   )
 }

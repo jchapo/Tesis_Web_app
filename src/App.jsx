@@ -6,12 +6,12 @@ import Login from './pages/Login'
 import Orders from './pages/Orders'
 import OrderCreate from './pages/OrderCreate'
 import OrderView from './pages/OrderView'
-import OrderEdit from './pages/OrderEdit'
 import OrderAssign from './pages/OrderAssign'
 import Customers from './pages/Customers'
 import CustomerCreate from './pages/CostumerCreate'
 import Drivers from './pages/Drivers'
 import DriverCreate from './pages/DriverCreate'
+import SupervisorCreate from './pages/SupervisorCreate'
 import ClosingDashboard from './pages/ClosingDashboard'
 
 function App() {
@@ -34,12 +34,13 @@ function App() {
                       <Route path="/orders" element={<Orders />} />
                       <Route path="/orders/create" element={<OrderCreate />} />
                       <Route path="/orders/:orderId/view" element={<OrderView />} />
-                      <Route path="/orders/:orderId/edit" element={<OrderEdit />} />
+                      <Route path="/orders/:orderId/edit" element={<OrderCreate />} />
                       <Route path="/orders/:orderId/assign" element={<OrderAssign />} />
                       <Route path="/customers" element={<Customers />} />
                       <Route path="/customers/create" element={<CustomerCreate />} />
                       <Route path="/drivers" element={<Drivers />} />
                       <Route path="/drivers/create" element={<DriverCreate />} />
+                      <Route path="/supervisors/create" element={<SupervisorCreate />} />
                       <Route path="/closing" element={<ClosingDashboard />} />
                     </Routes>
                   </Layout>

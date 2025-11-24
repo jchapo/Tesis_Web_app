@@ -13,7 +13,7 @@ import { db, functions } from '../config/firebase'
 export const createUser = async (userData, userType) => {
   try {
     // Validar tipo de usuario
-    if (userType !== 'cliente' && userType !== 'motorizado' && userType !== 'administrador') {
+    if (userType !== 'cliente' && userType !== 'motorizado' && userType !== 'administrador' && userType !== 'supervisor') {
       throw new Error('Tipo de usuario inválido')
     }
 
@@ -61,6 +61,15 @@ export const createClient = async (clientData) => {
  */
 export const createDriver = async (driverData) => {
   return createUser(driverData, 'motorizado')
+}
+
+/**
+ * Crea un nuevo supervisor
+ * @param {Object} supervisorData - Datos del supervisor
+ * @returns {Promise<Object>} - Resultado de la operación
+ */
+export const createSupervisor = async (supervisorData) => {
+  return createUser(supervisorData, 'supervisor')
 }
 
 /**

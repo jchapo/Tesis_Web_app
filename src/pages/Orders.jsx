@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAllOrders, searchOrders } from '../services/ordersService'
+import { getActiveOrders, searchOrders, assignDriverToOrder } from '../services/ordersService'
+import DriverAssignmentModal from '../components/DriverAssignmentModal'
 
 function Orders() {
   const navigate = useNavigate()
@@ -8,6 +9,10 @@ function Orders() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [showDriverModal, setShowDriverModal] = useState(false)
+  const [selectedOrderForAssignment, setSelectedOrderForAssignment] = useState(null)
+  const [assigningDriver, setAssigningDriver] = useState(false)
 
   // Estados de filtros
   const [filters, setFilters] = useState({
@@ -48,13 +53,42 @@ function Orders() {
     try {
       setLoading(true)
       setError(null)
-      const data = await getAllOrders()
+      const data = await getActiveOrders()
       setOrders(data)
     } catch (err) {
       setError('Error al cargar los pedidos. Por favor, verifica tu conexión.')
       console.error('Error cargando pedidos:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleOpenDriverModal = (order) => {
+    setSelectedOrderForAssignment(order)
+    setShowDriverModal(true)
+  }
+
+  const handleAssignDriver = async (driverData) => {
+    if (!selectedOrderForAssignment) return
+
+    try {
+      setAssigningDriver(true)
+      const result = await assignDriverToOrder(selectedOrderForAssignment.id, driverData, 'recojo')
+
+      if (result.success) {
+        // Recargar los pedidos para reflejar el cambio
+        await loadOrders()
+        console.log('✅ Motorizado asignado correctamente')
+      } else {
+        setError(result.message)
+      }
+    } catch (err) {
+      setError('Error al asignar motorizado')
+      console.error('Error asignando motorizado:', err)
+    } finally {
+      setAssigningDriver(false)
+      setShowDriverModal(false)
+      setSelectedOrderForAssignment(null)
     }
   }
 
@@ -65,7 +99,7 @@ function Orders() {
 
     try {
       setLoading(true)
-      const data = await searchOrders(term)
+      const data = await searchOrders(term,false)
       setOrders(data)
     } catch (err) {
       setError('Error al buscar pedidos.')
@@ -140,12 +174,12 @@ function Orders() {
         return false
       }
 
-      // Filtro por origen (distrito recojo)
+      // Filtro por origen
       if (filters.origin && order.pickupDistrict !== filters.origin) {
         return false
       }
 
-      // Filtro por destino (distrito entrega)
+      // Filtro por destino
       if (filters.destination && order.deliveryDistrict !== filters.destination) {
         return false
       }
@@ -157,26 +191,19 @@ function Orders() {
 
       // Filtro por fecha
       if (filters.date) {
-        // Convertir la fecha del filtro a objeto Date usando zona horaria local
         const [year, month, day] = filters.date.split('-')
         const filterDate = new Date(year, month - 1, day)
-
-        // Extraer la fecha del texto createdAt (formato: "DD-mes.")
-        // Ejemplo: "05-nov." o "5-dic."
+        
         const orderDateMatch = order.createdAt.match(/^(\d{1,2})-(\w{3})/)
         if (orderDateMatch) {
           const [, dayStr, monthStr] = orderDateMatch
-
-          // Mapear nombres de meses en español a números
           const monthMap = {
             'ene': 0, 'feb': 1, 'mar': 2, 'abr': 3, 'may': 4, 'jun': 5,
             'jul': 6, 'ago': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dic': 11
           }
-
           const orderMonth = monthMap[monthStr.toLowerCase()]
           const orderDay = parseInt(dayStr, 10)
-
-          // Comparar solo día y mes
+          
           if (orderDay !== filterDate.getDate() ||
               orderMonth !== filterDate.getMonth()) {
             return false
@@ -192,6 +219,9 @@ function Orders() {
 
   const filteredOrders = getFilteredOrders()
 
+  // Paginación (opcional, actualmente sin límite por página)
+  const itemsPerPage = filteredOrders.length // Mostrar todos
+  const totalPages = Math.ceil(filteredOrders.length / (itemsPerPage || 1))
   const currentOrders = filteredOrders
 
 
@@ -288,12 +318,36 @@ function Orders() {
   }
 
   return (
-    <div>
+    <div className="relative">
+      {/* Overlay de carga global */}
+      {assigningDriver && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-8 flex flex-col items-center gap-4 shadow-2xl">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary"></div>
+            <p className="text-gray-900 dark:text-white font-semibold text-lg">
+              Asignando motorizado...
+            </p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              Por favor espera mientras actualizamos la información
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-wrap justify-between items-center gap-4 p-4">
         <p className="text-gray-900 dark:text-white text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em] min-w-72">
           Gestión de Pedidos
         </p>
+        {/* ✅ Mostrar contador de pedidos activos */}
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          <span className="font-semibold text-gray-700 dark:text-gray-300">
+            {filteredOrders.length}
+          </span> pedido{filteredOrders.length !== 1 ? 's' : ''} activo{filteredOrders.length !== 1 ? 's' : ''}
+          {orders.length !== filteredOrders.length && (
+            <span className="ml-1">de {orders.length} total</span>
+          )}
+        </div>
       </div>
 
       {/* Search and Actions Bar */}
@@ -405,7 +459,8 @@ function Orders() {
           <button
             onClick={() => {
               setShowStatusDropdown(!showStatusDropdown)
-              setShowDistrictDropdown(false)
+              setShowOriginDropdown(false)
+              setShowDestinationDropdown(false)
               setShowDriverDropdown(false)
             }}
             className={`flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg px-3 ${
@@ -662,18 +717,22 @@ function Orders() {
                   <th scope="col" className="px-2 py-2.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Dist. Entrega
                   </th>
+                  {/* 
                   <th scope="col" className="px-2 py-2.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Dimensiones
                   </th>
+                  */}
                   <th scope="col" className="px-2 py-2.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Motorizado
                   </th>
                   <th scope="col" className="px-2 py-2.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     F. Creación
                   </th>
+                  {/*
                   <th scope="col" className="px-2 py-2.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     F. Programada
                   </th>
+                  */}
                   <th scope="col" className="px-2 py-2.5 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                     Monto
                   </th>
@@ -685,8 +744,9 @@ function Orders() {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {currentOrders.map((order) => {
                   const status = getStatusBadge(order.status)
+                  const hasNoDriver = order.driver === 'Sin Asignar' || order.driver === 'N/A' || !order.driver
                   return (
-                    <tr key={order.id} className="hover:bg-gray-100 dark:hover:bg-white/5">
+                    <tr key={order.id} className={`hover:bg-gray-100 dark:hover:bg-white/5 ${hasNoDriver ? 'bg-amber-50 dark:bg-amber-900/10 border-l-4 border-amber-500' : ''}`}>
                       <td className="px-2 py-2 whitespace-nowrap text-xs font-semibold text-gray-800 dark:text-gray-200">
                         {order.id}
                       </td>
@@ -696,37 +756,49 @@ function Orders() {
                         </span>
                       </td>
                       <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
-                        {order.customer}
+                        <span className="inline-block max-w-[105px] truncate" title={order.customer}>
+                          {order.customer}
+                        </span>
                       </td>
                       <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
-                        {order.recipient}
+                        <span className="inline-block max-w-[105px] truncate" title={order.recipient}>
+                          {order.recipient}
+                        </span>
                       </td>
                       <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
-                        {order.pickupDistrict}
+                        <span className="inline-block max-w-[105px] truncate" title={order.pickupDistrict}>
+                          {order.pickupDistrict}
+                        </span>
                       </td>
                       <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
-                        {order.deliveryDistrict}
+                        <span className="inline-block max-w-[105px] truncate" title={order.deliveryDistrict}>
+                          {order.deliveryDistrict}
+                        </span>
                       </td>
+                      {/*
                       <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
                         {order.dimensions}
                       </td>
+                      */}
                       <td className={`px-2 py-2 whitespace-nowrap text-xs ${order.driver === 'Sin Asignar' || order.driver === 'N/A' ? 'text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200'}`}>
                         {order.driver}
                       </td>
                       <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
                         {order.createdAt}
                       </td>
+                      {/*
                       <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
                         {order.scheduledDelivery}
                       </td>
+                      */}
                       <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-800 dark:text-gray-200">
                         {order.amount}
                       </td>
                       <td className="px-2 py-2 whitespace-nowrap text-right text-xs font-medium sticky-col bg-white dark:bg-background-dark">
                         <div className="flex justify-end gap-0.5">
                           <button
-                            onClick={() => navigate(`/orders/${encodeURIComponent(order.id)}/assign`)}
-                            className="p-1.5 text-gray-500 hover:text-primary dark:hover:text-primary transition-colors"
+                            onClick={() => handleOpenDriverModal(order)}
+                            className={`p-1.5 transition-colors ${hasNoDriver ? 'text-amber-600 hover:text-amber-700 dark:text-amber-500 dark:hover:text-amber-400 bg-amber-50 dark:bg-amber-500/10 rounded' : 'text-gray-500 hover:text-primary dark:hover:text-primary'}`}
                             title="Asignar motorizado"
                           >
                             <span className="material-symbols-outlined text-[18px]">two_wheeler</span>
@@ -758,6 +830,17 @@ function Orders() {
         </div>
       )}
 
+      {/* Modal de Asignación de Motorizado */}
+      <DriverAssignmentModal
+        isOpen={showDriverModal}
+        onClose={() => {
+          setShowDriverModal(false)
+          setSelectedOrderForAssignment(null)
+        }}
+        onAssign={handleAssignDriver}
+        currentDriver={selectedOrderForAssignment?.driver !== 'Sin Asignar' ? selectedOrderForAssignment?.driver : null}
+        isAssigning={assigningDriver}
+      />
     </div>
   )
 }

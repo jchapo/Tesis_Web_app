@@ -20,6 +20,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [userData, setUserData] = useState(null)
+  const [userRole, setUserRole] = useState(null) // Custom claim del usuario
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -37,6 +38,17 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  // Obtener custom claims del usuario desde el token
+  const loadUserRole = async (user) => {
+    try {
+      const idTokenResult = await user.getIdTokenResult()
+      return idTokenResult.claims.role || null
+    } catch (err) {
+      console.error('Error obteniendo custom claims:', err)
+      return null
+    }
+  }
+
   // Escuchar cambios en el estado de autenticación
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -47,10 +59,15 @@ export const AuthProvider = ({ children }) => {
         // Cargar datos adicionales del usuario desde Firestore
         const data = await loadUserData(user.uid)
         setUserData(data)
+
+        // Cargar custom claims del usuario
+        const role = await loadUserRole(user)
+        setUserRole(role)
       } else {
         // No hay usuario autenticado
         setUser(null)
         setUserData(null)
+        setUserRole(null)
       }
       setLoading(false)
     })
@@ -71,7 +88,11 @@ export const AuthProvider = ({ children }) => {
       const data = await loadUserData(user.uid)
       setUserData(data)
 
-      return { success: true, user, userData: data }
+      // Cargar custom claims
+      const role = await loadUserRole(user)
+      setUserRole(role)
+
+      return { success: true, user, userData: data, userRole: role }
     } catch (err) {
       console.error('Error en login:', err)
 
@@ -113,6 +134,7 @@ export const AuthProvider = ({ children }) => {
       await signOut(auth)
       setUser(null)
       setUserData(null)
+      setUserRole(null)
       return { success: true }
     } catch (err) {
       console.error('Error en logout:', err)
@@ -120,37 +142,66 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Verificar si el usuario es admin
+  // Verificar si el usuario es admin (usando custom claims)
   const isAdmin = () => {
+    // Priorizar custom claims sobre el rol de Firestore
+    if (userRole) {
+      return userRole === 'administrador'
+    }
+    // Fallback a Firestore si no hay custom claims
     if (!userData) return false
     const rol = userData.rol?.toLowerCase()
-    return rol === 'admin' || rol === 'administrador'
+    return rol === 'administrador' || rol === 'administrador'
   }
 
-  // Verificar si el usuario es motorizado
+  // Verificar si el usuario es motorizado (usando custom claims)
   const isMotorizado = () => {
+    // Priorizar custom claims sobre el rol de Firestore
+    if (userRole) {
+      return userRole === 'motorizado'
+    }
+    // Fallback a Firestore si no hay custom claims
     if (!userData) return false
     const rol = userData.rol?.toLowerCase()
     return rol === 'motorizado'
   }
 
-  // Verificar si el usuario es cliente
+  // Verificar si el usuario es cliente (usando custom claims)
   const isCliente = () => {
+    // Priorizar custom claims sobre el rol de Firestore
+    if (userRole) {
+      return userRole === 'cliente'
+    }
+    // Fallback a Firestore si no hay custom claims
     if (!userData) return false
     const rol = userData.rol?.toLowerCase()
     return rol === 'cliente'
   }
 
+  // Verificar si el usuario es supervisor (usando custom claims)
+  const isSupervisor = () => {
+    // Priorizar custom claims sobre el rol de Firestore
+    if (userRole) {
+      return userRole === 'supervisor'
+    }
+    // Fallback a Firestore si no hay custom claims
+    if (!userData) return false
+    const rol = userData.rol?.toLowerCase()
+    return rol === 'supervisor'
+  }
+
   const value = {
     user,
     userData,
+    userRole,
     loading,
     error,
     login,
     logout,
     isAdmin,
     isMotorizado,
-    isCliente
+    isCliente,
+    isSupervisor
   }
 
   return (

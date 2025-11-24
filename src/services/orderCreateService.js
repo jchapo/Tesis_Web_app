@@ -105,6 +105,176 @@ function determinarGrupo(distrito) {
 }
 
 /**
+ * Actualiza un pedido existente en Firestore
+ * @param {string} orderId - ID del pedido a actualizar
+ * @param {Object} formData - Datos del formulario
+ * @returns {Promise<Object>} - Resultado de la operación
+ */
+export async function updateOrder(orderId, formData) {
+  try {
+    const now = new Date()
+
+    // Procesar coordenadas
+    const coordenadasProveedor = await procesarEntrada(formData.empresaDireccion)
+    const coordenadasCliente = await procesarEntrada(formData.clienteDireccion)
+
+    // Calcular comisión (usar manual si está presente, sino calcular)
+    const esPaqueteGrande = formData.esPaqueteGrande === 'grande'
+    const comision = formData.comisionManual !== null && formData.comisionManual !== undefined
+      ? parseFloat(formData.comisionManual)
+      : calcularComision(formData.clienteDistrito, esPaqueteGrande)
+
+    // Determinar grupos para asignación automática
+    const grupoProveedor = determinarGrupo(formData.empresaDistrito)
+    const grupoCliente = determinarGrupo(formData.clienteDistrito)
+
+    const motorizadoRecojo = grupoProveedor ? grupoProveedor : "Asignar Recojo"
+    const motorizadoEntrega = grupoCliente ? grupoCliente : "Asignar Entrega"
+
+    // Calcular monto a cobrar
+    //const montoCobrar = formData.seCobrara === 'si' ? parseFloat(formData.montoCobrar || 0) : 0
+    const montoTotal = formData.seCobrara === 'si' ? parseFloat(formData.montoCobrar || 0) : 0
+    const montoDevolverCobrar = montoTotal - comision
+
+    // Crear fecha de entrega programada
+    let fechaEntregaProgramada = new Date(formData.fechaEntrega)
+
+    // Construir el objeto de actualización
+    const updateData = {
+      asignacion: {
+        recojo: {
+          estado: formData.asignacionRecojoEstado || "pendiente",
+          rutaId: formData.asignacionRecojoRutaId || null,
+          rutaNombre: formData.asignacionRecojoRutaNombre || motorizadoRecojo,
+          motorizadoUid: formData.asignacionRecojoMotorizadoUid || null,
+          motorizadoNombre: formData.asignacionRecojoMotorizadoNombre || null,
+          asignadaEn: formData.asignacionRecojoAsignadaEn || null,
+          razonPendiente: formData.asignacionRecojoRazonPendiente || (motorizadoRecojo === "Asignar Recojo" ? "Pendiente de asignación manual" : null)
+        },
+        entrega: {
+          estado: formData.asignacionEntregaEstado || "pendiente",
+          rutaId: formData.asignacionEntregaRutaId || null,
+          rutaNombre: formData.asignacionEntregaRutaNombre || motorizadoEntrega,
+          motorizadoUid: formData.asignacionEntregaMotorizadoUid || null,
+          motorizadoNombre: formData.asignacionEntregaMotorizadoNombre || null,
+          asignadaEn: formData.asignacionEntregaAsignadaEn || null,
+          razonPendiente: formData.asignacionEntregaRazonPendiente || (motorizadoEntrega === "Asignar Entrega" ? "Pendiente de asignación manual" : null)
+        }
+      },
+
+      indices: {
+        requiereAsignacionManual: true,
+        motorizadoRecojoUid: formData.asignacionRecojoMotorizadoUid || null,
+        motorizadoEntregaUid: formData.asignacionEntregaMotorizadoUid || null,
+        rutaRecojoId: formData.asignacionRecojoRutaId || null,
+        rutaEntregaId: formData.asignacionEntregaRutaId || null,
+        distritoRecojo: formData.empresaDistrito,
+        distritoEntrega: formData.clienteDistrito
+      },
+
+      proveedor: {
+        uid: formData.proveedorUid || null,
+        nombre: cleanString(formData.empresaNombre).toUpperCase(),
+        correo: formData.empresaEmail || '',
+        telefono: cleanAndValidatePhoneNumber(formData.empresaCelular),
+        direccion: {
+          link: formData.empresaDireccion || '',
+          distrito: formData.empresaDistrito,
+          coordenadas: {
+            latitud: coordenadasProveedor.latitud,
+            longitud: coordenadasProveedor.longitud
+          }
+        }
+      },
+
+      destinatario: {
+        nombre: capitalizeName(cleanString(formData.clienteNombre)),
+        telefono: cleanAndValidatePhoneNumber(formData.clienteCelular),
+        direccion: {
+          link: formData.clienteDireccion || '',
+          distrito: formData.clienteDistrito,
+          coordenadas: {
+            latitud: coordenadasCliente.latitud,
+            longitud: coordenadasCliente.longitud
+          }
+        }
+      },
+
+      paquete: {
+        detalle: capitalizeName(formData.detalleEnvio || ''),
+        observaciones: formData.observaciones || '',
+        dimensiones: {
+          alto: formData.dimensionesAlto ? parseFloat(formData.dimensionesAlto) : null,
+          ancho: formData.dimensionesAncho ? parseFloat(formData.dimensionesAncho) : null,
+          largo: formData.dimensionesLargo ? parseFloat(formData.dimensionesLargo) : null,
+          volumen: formData.volumen ? parseFloat(formData.volumen) : null,
+          peso: formData.peso || null,
+          estimadoPorIA: formData.estimadoIA || false,
+          editadoManualmente: true,
+          excedeMaximo: esPaqueteGrande,
+          confianzaIA: formData.confianzaIA || null
+        },
+        fotos: formData.fotos || {
+          recojo: {
+            url: null,
+            thumbnail: null,
+            timestamp: null,
+            procesadaPorIA: false
+          },
+          entrega: {
+            url: null,
+            thumbnail: null,
+            timestamp: null
+          },
+          comprobantePago: {
+            url: null,
+            thumbnail: null,
+            timestamp: null
+          }
+        }
+      },
+
+      pago: {
+        seCobra: formData.seCobrara === 'si',
+        metodoPago: formData.metodoPago || 'preguntar',
+        monto: Math.round(montoDevolverCobrar),
+        comision: Math.round(comision),
+        montoTotal: Math.round(montoTotal),
+        estadoPago: formData.estadoPago || "pendiente",
+        billeteraUsada: formData.billeteraUsada || null
+      },
+
+      fechas: {
+        creacion: formData.fechaCreacion,
+        entregaProgramada: Timestamp.fromDate(fechaEntregaProgramada),
+        recojo: formData.fechaRecojo || null,
+        entrega: formData.fechaEntrega || null,
+        anulacion: formData.fechaAnulacion || null
+      },
+
+      actualizadoEn: Timestamp.fromDate(now)
+    }
+
+    // Actualizar en Firestore
+    const docRef = doc(db, 'pedidos', orderId)
+    await setDoc(docRef, updateData, { merge: true })
+
+    return {
+      success: true,
+      orderId: orderId,
+      message: 'Pedido actualizado exitosamente'
+    }
+  } catch (error) {
+    console.error('Error al actualizar pedido:', error)
+    return {
+      success: false,
+      error: error.message,
+      message: 'Error al actualizar el pedido'
+    }
+  }
+}
+
+/**
  * Crea un pedido en Firestore
  * @param {Object} formData - Datos del formulario
  * @returns {Promise<Object>} - Resultado de la operación
@@ -113,17 +283,17 @@ export async function createOrder(formData) {
   try {
     const now = new Date()
     const cutoffHour = 14
-    
+
     // Crear fecha de entrega programada
     let fechaEntregaProgramada = new Date(formData.fechaEntrega)
-    
+
     // Si el pedido se crea después de las 2pm y la entrega es para hoy, programar para mañana
     if (now.getHours() >= cutoffHour) {
       const entregaDate = new Date(formData.fechaEntrega)
       entregaDate.setHours(0, 0, 0, 0)
       const currentDate = new Date()
       currentDate.setHours(0, 0, 0, 0)
-      
+
       if (entregaDate.getTime() <= currentDate.getTime()) {
         fechaEntregaProgramada.setDate(fechaEntregaProgramada.getDate() + 1)
       }
@@ -131,14 +301,16 @@ export async function createOrder(formData) {
 
     // Generar ID del documento
     const docId = formatDocId(now)
-    
+
     // Procesar coordenadas
     const coordenadasProveedor = await procesarEntrada(formData.empresaDireccion)
     const coordenadasCliente = await procesarEntrada(formData.clienteDireccion)
-    
-    // Calcular comisión
+
+    // Calcular comisión (usar manual si está presente, sino calcular)
     const esPaqueteGrande = formData.esPaqueteGrande === 'grande'
-    const comision = calcularComision(formData.clienteDistrito, esPaqueteGrande)
+    const comision = formData.comisionManual !== null && formData.comisionManual !== undefined
+      ? parseFloat(formData.comisionManual)
+      : calcularComision(formData.clienteDistrito, esPaqueteGrande)
     
     // Determinar grupos para asignación automática
     const grupoProveedor = determinarGrupo(formData.empresaDistrito)
@@ -148,8 +320,11 @@ export async function createOrder(formData) {
     const motorizadoEntrega = grupoCliente ? grupoCliente : "Asignar Entrega"
     
     // Calcular monto a cobrar
-    const montoCobrar = formData.seCobrara === 'si' ? parseFloat(formData.montoCobrar || 0) : 0
-    const montoTotal = montoCobrar + comision
+    //const montoCobrar = formData.seCobrara === 'si' ? parseFloat(formData.montoCobrar || 0) : 0
+    //const montoTotal = montoCobrar + comision
+    //const montoCobrar = formData.seCobrara === 'si' ? parseFloat(formData.montoCobrar || 0) : 0
+    const montoTotal = formData.seCobrara === 'si' ? parseFloat(formData.montoCobrar || 0) : 0
+    const montoDevolverCobrar = montoTotal - comision
     
     // Construir el objeto del pedido
     const orderData = {
@@ -266,9 +441,9 @@ export async function createOrder(formData) {
       pago: {
         seCobra: formData.seCobrara === 'si',
         metodoPago: formData.metodoPago || 'preguntar',
-        monto: Math.round(montoCobrar * 100), // Convertir a centavos
-        comision: Math.round(comision * 100), // Convertir a centavos
-        montoTotal: Math.round(montoTotal * 100), // Convertir a centavos
+        monto: Math.round(montoDevolverCobrar), 
+        comision: Math.round(comision), 
+        montoTotal: Math.round(montoTotal), 
         estadoPago: "pendiente",
         billeteraUsada: null
       },

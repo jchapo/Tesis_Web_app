@@ -13,7 +13,7 @@ exports.createUser = onCall(async (request) => {
   const { userData, userType } = request.data;
 
   // Validar tipo de usuario
-  if (!['cliente', 'motorizado', 'administrador'].includes(userType)) {
+  if (!['cliente', 'motorizado', 'administrador', 'supervisor'].includes(userType)) {
     throw new HttpsError('invalid-argument', 'Tipo de usuario inválido');
   }
 
@@ -58,7 +58,21 @@ exports.createUser = onCall(async (request) => {
 
     const uid = userRecord.uid;
 
-    // 2. Preparar datos según el tipo
+    // 2. Establecer custom claims según el tipo de usuario
+    // Convertir 'administrador' a 'administrador' para el custom claim
+    const roleMap = {
+      'administrador': 'administrador',
+      'motorizado': 'motorizado',
+      'cliente': 'cliente',
+      'supervisor': 'supervisor'
+    };
+
+    const customClaims = {
+      role: roleMap[userType] || userType
+    };
+    await admin.auth().setCustomUserClaims(uid, customClaims);
+
+    // 3. Preparar datos según el tipo
     const baseData = {
       nombre: userData.nombre,
       apellido: userData.apellido,
@@ -71,9 +85,10 @@ exports.createUser = onCall(async (request) => {
     };
 
     // Agregar datos empresariales si es cliente
-    if (userType === 'cliente' && userData.datosEmpresariales) {
+    if (userType === 'cliente') {
       baseData.empresa = userData.empresa || null;
       baseData.ruc = userData.ruc || null;
+      baseData.distrito = userData.distrito || null;
       baseData.razonSocial = userData.razonSocial || null;
     }
 
@@ -85,15 +100,17 @@ exports.createUser = onCall(async (request) => {
         color: userData.vehiculoColor || null,
       };
       baseData.licencia = userData.licencia || null;
+      baseData.ruta = userData.ruta || null;
+      baseData.detallesRuta = userData.detallesRuta || null;
     }
 
-    // 3. Guardar en Firestore usando el UID como ID del documento
+    // 4. Guardar en Firestore usando el UID como ID del documento
     await admin.firestore().collection('usuarios').doc(uid).set(baseData);
 
     return {
       success: true,
       userId: uid,
-      message: `${userType === 'cliente' ? 'Cliente' : userType === 'motorizado' ? 'Motorizado' : 'Administrador'} creado exitosamente`,
+      message: `${userType === 'cliente' ? 'Cliente' : userType === 'motorizado' ? 'Motorizado' : userType === 'supervisor' ? 'Supervisor' : 'Administrador'} creado exitosamente`,
     };
   } catch (error) {
     console.error('Error al crear usuario:', error);
